@@ -153,7 +153,7 @@ switch stimtype
             if nspikes==0
                 continue
             end
-            type = repmat(['pulse'], nspikes, 1);
+            type = repmat(["pulse"], nspikes, 1);
             rep  = repmat([i],       nspikes, 1);
             pulse_width = repmat(out.pulsewidths, nspikes,1);
             pulse_table = [pulse_table;table(spikes,type,rep,pulse_width)];
@@ -167,7 +167,7 @@ switch stimtype
             if nspikes==0
                 continue
             end
-            type = repmat(['train'], nspikes, 1);
+            type = repmat(["train"], nspikes, 1);
             rep  = repmat([i],       nspikes, 1);
             pulse_width = repmat(out.trainpulsewidths, nspikes,1);
             n_pulses = repmat(out.trainnumpulses, nspikes,1);
@@ -175,7 +175,7 @@ switch stimtype
             train_table = [train_table;table(spikes,type,rep,pulse_width, n_pulses, isi)];
         end
         spike_table = concat_tables(pulse_table,train_table); 
-        expt = repmat('pinp', height(spike_table),1);
+        expt = repmat("pinp", height(spike_table),1);
         spike_table = [spike_table, table(expt)];
         
 end
