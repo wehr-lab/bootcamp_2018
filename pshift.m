@@ -10,8 +10,8 @@ function [s, fs] = pshift(ap, r, play, save)
 %set analysis hop size/synthesis hop size to ratio of transformation
 %try 10x for ~1kHz
 wlen = 4096;
-alen = 128;
-slen = 128*r;
+alen = 256;
+slen = 256*r;
 hratio = slen/alen;
 %lendn = lendn/alen;
 
@@ -111,6 +111,6 @@ if save
     fn = [fn,'_pshift'];
     save_fn = [path,filesep, fn, ext];
     fprintf('Saving to %s',save_fn)
-    audiowrite([path, fn, ext],s,fs);
+    audiowrite(save_fn,s,fs,'BitsPerSample',24);
 end
     
