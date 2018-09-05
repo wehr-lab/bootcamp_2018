@@ -19,6 +19,12 @@ end
 % set desired fields and names depending on stim type
 load(out_fn);
 stimtype = out.stimlog(1).type;
+% hack
+for i = 1:length(out.stimlog)
+    if strcmp(out.stimlog(i).type, 'soundfile')
+        stimtype='soundfile';
+    end
+end
 switch stimtype
     case 'clicktrain'
         field_list = {'cell','icis','durs','MtOFF','samprate','stimlog'};
@@ -32,6 +38,10 @@ switch stimtype
         % aka PINPing
         field_list  = {'cell','MPulse','MTrain','pulsewidths','trainnumpulses','trainpulsewidths','trainisis','samprate','stimlog'};
         rename_list = {'cell','pulse_spikes','train_spikes','pulsewidths','trainnumpulses','trainpulsewidths','trainisis','samprate','stimlog'};
+    case 'soundfile'
+        field_list  = {'cell','LaserStart','LaserWidth','M1ON','M1OFF','samprate','stimlog'};
+        rename_list = {'cell','amps','freqs','durs','spiketimes','samprate','stimlog'};
+        stim_idx = {'freqs','amps'};
         
 end
 
