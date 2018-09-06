@@ -2,6 +2,7 @@ function varargout = clean_out_psth(out_fn, varargin)
 %varargs
 %1: save cleaned out .mat file (detault true)
 %2: save cleaned spikes table (default true)
+% god i fkn hate matlab
 switch length(varargin)
     case 0
         save_mat = 1;
@@ -39,9 +40,9 @@ switch stimtype
         field_list  = {'cell','MPulse','MTrain','pulsewidths','trainnumpulses','trainpulsewidths','trainisis','samprate','stimlog'};
         rename_list = {'cell','pulse_spikes','train_spikes','pulsewidths','trainnumpulses','trainpulsewidths','trainisis','samprate','stimlog'};
     case 'soundfile'
-        field_list  = {'cell','LaserStart','LaserWidth','M1ON','M1OFF','samprate','stimlog'};
-        rename_list = {'cell','amps','freqs','durs','spiketimes','samprate','stimlog'};
-        stim_idx = {'freqs','amps'};
+        field_list  = {'cell','LaserStart','LaserWidth','M1ON','M1OFF','amps','durs','sourcefiles','samprate','stimlog'};
+        rename_list = {'cell','laser_start','laser_width','on_spikes','off_spikes','amps','durs','files','samprate','stimlog'};
+        stim_idx = {'files','amps','durs'};
         
 end
 
@@ -64,6 +65,19 @@ switch stimtype
         end
         clean_out.pulse_spikes = pulse_spikes;
         clean_out.train_spikes = train_spikes;
+    
+    case 'soundfile'
+        off_spikes = {};
+        for i = 1:prod(size(clean_out.off_spikes))
+            off_spikes(i) = {clean_out.off_spikes(i).spiketimes};
+        end
+        on_spikes = {};
+        for i = 1:prod(size(clean_out.on_spikes))
+            on_spikes(i) = {clean_out.on_spikes(i).spiketimes};
+        end
+        clean_out.off_spikes = reshape(off_spikes, size(clean_out.off_spikes));
+        clean_out.on_spikes  = reshape(on_spikes, size(clean_out.on_spikes));
+    
         
     
     otherwise
@@ -77,14 +91,15 @@ switch stimtype
         clean_out.spiketimes = spiketimes;
 end
 
-% unnest stimlog params
-stim_params = struct2table(clean_out.stimlog(1).param);
-for i=2:length(clean_out.stimlog)
-    param_row = struct2table(clean_out.stimlog(i).param);
-    stim_params = concat_tables(stim_params, param_row);
+if save_mat == 1
+    % unnest stimlog params
+    stim_params = struct2table(clean_out.stimlog(1).param);
+    for i=2:length(clean_out.stimlog)
+        param_row = struct2table(clean_out.stimlog(i).param);
+        stim_params = concat_tables(stim_params, param_row);
+    end
+    clean_out.stimparams = stim_params;
 end
-clean_out.stimparams = stim_params;
-
 % rename so when we load again it's consistent
 out = clean_out;
 % save
@@ -177,6 +192,62 @@ switch stimtype
         spike_table = concat_tables(pulse_table,train_table); 
         expt = repmat("pinp", height(spike_table),1);
         spike_table = [spike_table, table(expt)];
+        
+    case 'soundfile'
+        % rename files
+        for i = 1:length(out.files)
+            split_file = strsplit(out.files{i},'_'); 
+            name_ind = find(cellfun(@(s) ~isempty(strfind(s, 'sourcefile')), split_file))+1;
+            out.files{i} = split_file{name_ind};
+        end
+        
+        reps = size(out.on_spikes);
+        reps = reps(end);
+        [stim_idx1,stim_idx2,stim_idx3, stim_reps] = ndgrid(out.(stim_idx{1}), out.(stim_idx{2}),out.(stim_idx{3}), 1:reps);
+        for i = 1:prod(size(out.on_spikes))
+            spikes = out.on_spikes{i}';
+            nspikes = length(spikes);
+            if nspikes==0
+                continue
+            end
+            idx1 = repmat(stim_idx1(i),nspikes,1);
+            idx2 = repmat(stim_idx2(i),nspikes,1);
+            idx3 = repmat(stim_idx3(i),nspikes,1);
+            rep  = repmat(stim_reps(i),nspikes,1);
+            spike_table = [spike_table;table(spikes,idx1,idx2,idx3,rep)];
+        end
+        laser = repmat(1, height(spike_table),1);
+        laser_start = repmat(out.laser_start, height(spike_table),1);
+        laser_dur   = repmat(out.laser_width,  height(spike_table),1);
+        spike_table = [spike_table, table(laser, laser_start, laser_dur)];
+        
+        % same for laser off
+        off_table = table();
+        for i = 1:prod(size(out.off_spikes))
+            spikes = out.off_spikes{i}';
+            nspikes = length(spikes);
+            if nspikes==0
+                continue
+            end
+            idx1 = repmat(stim_idx1(i),nspikes,1);
+            idx2 = repmat(stim_idx2(i),nspikes,1);
+            idx3 = repmat(stim_idx3(i),nspikes,1);
+            rep  = repmat(stim_reps(i),nspikes,1);
+            off_table = [off_table;table(spikes,idx1,idx2,idx3,rep)];
+        end
+        laser = repmat(0, height(off_table),1);
+        off_table = [off_table, table(laser)];
+        
+        spike_table = concat_tables(spike_table, off_table);
+        
+        spike_table.Properties.VariableNames{'idx1'} = stim_idx{1};
+        spike_table.Properties.VariableNames{'idx2'} = stim_idx{2};
+        spike_table.Properties.VariableNames{'idx3'} = stim_idx{3};
+        % add experiment type and duration (assuming we have only one
+        % duration)
+        expt = repmat('soundfile', height(spike_table),1);
+        spike_table = [spike_table, table(expt)];
+
         
 end
 
