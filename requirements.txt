@@ -1,1 +1,9 @@
-pip install matplotlib pandas numpy altair scipy ipywidgets vega_datasets notebook vega
+matplotlib
+pandas
+numpy
+altair 
+scipy 
+ipywidgets 
+vega_datasets 
+notebook 
+vega

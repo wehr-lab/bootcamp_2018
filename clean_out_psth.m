@@ -151,13 +151,21 @@ switch stimtype
             rep  = repmat(stim_reps(i),nspikes,1);
             spike_table = [spike_table;table(spikes,idx1,idx2,rep)];
         end
-        spike_table.Properties.VariableNames{'idx1'} = stim_idx{1};
-        spike_table.Properties.VariableNames{'idx2'} = stim_idx{2};
-        % add experiment type and duration (assuming we have only one
-        % duration)
-        dur  = repmat(out.durs,       height(spike_table),1);
-        expt = repmat('tuning_curve', height(spike_table),1);
-        spike_table = [spike_table, table(expt), table(dur)];
+        
+        % if we haven't gotten any spikes, dont try it
+        table_size = size(spike_table);
+        if table_size(1) ~= 0
+            spike_table.Properties.VariableNames{'idx1'} = stim_idx{1};
+            spike_table.Properties.VariableNames{'idx2'} = stim_idx{2};
+            % add experiment type and duration (assuming we have only one
+            % duration)
+            dur  = repmat(out.durs,       height(spike_table),1);
+            expt = repmat('tuning_curve', height(spike_table),1);
+            spike_table = [spike_table, table(expt), table(dur)];
+            
+        end
+        
+
     case 'silentsound'
         % aka pinping
         % first do pulses
@@ -217,8 +225,8 @@ switch stimtype
             spike_table = [spike_table;table(spikes,idx1,idx2,idx3,rep)];
         end
         laser = repmat(1, height(spike_table),1);
-        laser_start = repmat(out.laser_start, height(spike_table),1);
-        laser_dur   = repmat(out.laser_width,  height(spike_table),1);
+        laser_start = repmat(out.laser_start(1), height(spike_table),1);
+        laser_dur   = repmat(out.laser_width(1),  height(spike_table),1);
         spike_table = [spike_table, table(laser, laser_start, laser_dur)];
         
         % same for laser off
